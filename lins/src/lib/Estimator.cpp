@@ -34,15 +34,15 @@ void LinsFusion::initialization() {
 
   // Subscribe to IMU, segmented point clouds, and map-refined odometry feedback
   subMapOdom_ = pnh_.subscribe<nav_msgs::Odometry>(
-      LIDAR_MAPPING_TOPIC, 5, &LinsFusion::mapOdometryCallback, this);
+      LIDAR_MAPPING_TOPIC, 5, &LinsFusion::mapOdometryCallback, this);// 订阅"/integrated_to_init"，即地图匹配矫正后的里程计位姿
   subImu = pnh_.subscribe<sensor_msgs::Imu>(IMU_TOPIC, 100,
-                                            &LinsFusion::imuCallback, this);
+                                            &LinsFusion::imuCallback, this);//将imu测量转移到世界坐标系下，然后入队，
   subLaserCloud = pnh_.subscribe<sensor_msgs::PointCloud2>(
-      "/segmented_cloud", 2, &LinsFusion::laserCloudCallback, this);
+      "/segmented_cloud", 2, &LinsFusion::laserCloudCallback, this); //入队 pclBuf_
   subLaserCloudInfo = pnh_.subscribe<cloud_msgs::cloud_info>(
-      "/segmented_cloud_info", 2, &LinsFusion::laserCloudInfoCallback, this);
+      "/segmented_cloud_info", 2, &LinsFusion::laserCloudInfoCallback, this); // 入队cloudInfoBuf_
   subOutlierCloud = pnh_.subscribe<sensor_msgs::PointCloud2>(
-      "/outlier_cloud", 2, &LinsFusion::outlierCloudCallback, this);
+      "/outlier_cloud", 2, &LinsFusion::outlierCloudCallback, this);  //入队outlierBuf_
 
   // Set publishers
   pubUndistortedPointCloud =
@@ -114,7 +114,7 @@ void LinsFusion::mapOdometryCallback(
             odometryMsg->pose.pose.position.y,
             odometryMsg->pose.pose.position.z);
   Q4D q_yzx(geoQuat.w, geoQuat.x, geoQuat.y, geoQuat.z);
-  V3D t_xyz = estimator->Q_yzx_to_xyz * t_yzx;
+  V3D t_xyz = estimator->Q_yzx_to_xyz * t_yzx; // Q_yzx_to_xyz << 0., 0., 1., 1., 0., 0., 0., 1., 0.;
   Q4D q_xyz =
       estimator->Q_yzx_to_xyz * q_yzx * estimator->Q_yzx_to_xyz.inverse();
 

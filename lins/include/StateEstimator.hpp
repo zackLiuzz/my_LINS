@@ -283,17 +283,17 @@ class StateEstimator {
     TicToc ts_fea;  // Calculate the time used in feature extraction
     scan_new_->setPointCloud(time, distortedPointCloud, cloudInfo,
                              outlierPointCloud);
-    undistortPcl(scan_new_);
-    calculateSmoothness(scan_new_);
-    markOccludedPoints(scan_new_);
-    extractFeatures(scan_new_);
+    undistortPcl(scan_new_);//转到imu坐标系下，生成点云时间
+    calculateSmoothness(scan_new_);//计算曲率
+    markOccludedPoints(scan_new_);//去除可能被遮挡的点以及和前进方向平行的线，标记为cloudNeighborPicked_ = 1
+    extractFeatures(scan_new_);//提取面和边缘特征点
     imu_last_ = imu;
     double time_fea = ts_fea.toc();
 
     TicToc ts_opt;  // Calculate the time used in state estimation
     switch (status_) {
       case STATUS_INIT:
-        if (processFirstScan()) status_ = STATUS_FIRST_SCAN;
+        if (processFirstScan()) status_ = STATUS_FIRST_SCAN;// 初始化eskf ,初始化kdtree
         break;
       case STATUS_FIRST_SCAN:
         if (processSecondScan())
@@ -626,7 +626,7 @@ class StateEstimator {
     for (int i = 0; i < size; i++) {
       // If LiDAR frame does not align with Vehic frame, we transform the point
       // cloud to the vehicle frame
-      rotatePoint(&distPointCloud->points[i], &point);
+      rotatePoint(&distPointCloud->points[i], &point);//转到imu坐标系下
 
       double ori = -atan2(point.y, point.x);
       if (!halfPassed) {
@@ -836,7 +836,7 @@ class StateEstimator {
       PointType pointSel;
       PointType coeff, tripod1, tripod2, tripod3;
 
-      transformToStart(&newScan->surfPointsFlat_->points[i], &pointSel);
+      transformToStart(&newScan->surfPointsFlat_->points[i], &pointSel);//转移到起点坐标系下
 
       pcl::PointCloud<PointType>::Ptr laserCloudSurfLast =
           lastScan->surfPointsLessFlat_;
